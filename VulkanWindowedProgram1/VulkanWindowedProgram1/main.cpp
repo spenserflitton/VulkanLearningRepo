@@ -105,6 +105,7 @@ private:
 	VkInstance instance;
 	VkDebugUtilsMessengerEXT callback;
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+	VkDevice device;
 
 	bool initWindow()
 	{
@@ -327,6 +328,27 @@ private:
 		}
 	}
 
+	void createLogicalDevice()
+	{
+		QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+		float queuePriority = 1.0f;
+
+		VkDeviceQueueCreateInfo queueCreateInfo = {};
+		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueCreateInfo.queueFamilyIndex = indices.graphicsFamily;
+		queueCreateInfo.queueCount = 1;
+		queueCreateInfo.pQueuePriorities = &queuePriority;
+
+		VkPhysicalDeviceFeatures deviceFeatures = {};
+
+		VkDeviceCreateInfo createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+		createInfo.pQueueCreateInfos = &queueCreateInfo;
+		createInfo.queueCreateInfoCount = 1;
+
+		createInfo.pEnabledFeatures = &deviceFeatures;
+	}
+
 	bool initVulkan()
 	{
 		if (!createInstance())
@@ -335,6 +357,7 @@ private:
 		}
 		setupDebugCallback();
 		pickPhysicalDevice();
+		createLogicalDevice();
 
 		return true;
 	}
