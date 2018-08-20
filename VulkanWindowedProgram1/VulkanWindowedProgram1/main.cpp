@@ -33,6 +33,7 @@ Create and destroy a Vulkan surface on an SDL window.
 
 // Tell SDL not to mess with main()
 #define SDL_MAIN_HANDLED
+#define NOMINMAX
 
 #include <glm/glm.hpp>
 #include <SDL2/SDL.h>
@@ -47,11 +48,15 @@ Create and destroy a Vulkan surface on an SDL window.
 #include <cstdlib>
 #include <vector>
 #include <cstring>
+#include <algorithm>
 #include <set>
 
 std::vector<const char*> validationLayers = { "VK_LAYER_LUNARG_standard_validation" };
 
 std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+
+const int WIDTH = 1280;
+const int HEIGHT = 720;
 
 #if defined(_DEBUG)
 const bool enableValidationLayers = false;
@@ -130,7 +135,7 @@ private:
 			return false;
 		}
 		window = SDL_CreateWindow("Vulkan Window", SDL_WINDOWPOS_CENTERED,
-			SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_VULKAN);
+			SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, SDL_WINDOW_VULKAN);
 		if (window == NULL) {
 			std::cout << "Could not create SDL window." << std::endl;
 			return false;
@@ -336,6 +341,54 @@ private:
 		}
 
 		return indices.isComplete() && extensionsSupported && swapChainAdequate;
+	}
+
+	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
+	{
+		if (availableFormats.size() == 1 && availableFormats[0].format == VK_FORMAT_UNDEFINED)
+		{
+			return { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+		}
+
+		for (const auto& availableFormat : availableFormats)
+		{
+			if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+			{
+				return availableFormat;
+			}
+		}
+
+		return availableFormats[0];
+	}
+
+	VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> availablePresentModes)
+	{
+		for (const auto& availablePresentMode : availablePresentModes)
+		{
+			if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+			{
+				return availablePresentMode;
+			}
+		}
+
+		return VK_PRESENT_MODE_FIFO_KHR;
+	}
+	
+	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
+	{
+		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
+		{
+			return capabilities.currentExtent;
+		}
+		else
+		{
+			VkExtent2D actualExtent = { WIDTH, HEIGHT };
+
+			actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
+			actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
+
+			return actualExtent;
+		}
 	}
 
 	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device)
