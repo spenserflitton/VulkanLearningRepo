@@ -33,6 +33,7 @@ Create and destroy a Vulkan surface on an SDL window.
 
 // Tell SDL not to mess with main()
 #define SDL_MAIN_HANDLED
+//Had to do this due to a conflict with Windows.h
 #define NOMINMAX
 
 #include <glm/glm.hpp>
@@ -119,7 +120,6 @@ public:
 private:
 	SDL_Window * window;
 	VkInstance instance;
-	const char** sdlExtensions = new const char *[1];
 	VkDebugUtilsMessengerEXT callback;
 	VkSurfaceKHR surface;
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
@@ -272,6 +272,7 @@ private:
 
 	std::vector<const char*> getRequiredExtensions()
 	{
+		const char** sdlExtensions = new const char *[1];
 		uint32_t sdlExtensionCount = 0;
 		if (!SDL_Vulkan_GetInstanceExtensions(window, &sdlExtensionCount, NULL)) {
 			std::cout << "Could not get the number of required instance extensions from SDL." << std::endl;
