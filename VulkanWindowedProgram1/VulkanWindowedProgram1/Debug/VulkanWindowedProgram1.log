@@ -1,13 +1,2 @@
 ﻿  main.cpp
-k:\vulkanlearningrepo\vulkanwindowedprogram1\vulkanwindowedprogram1\main.cpp(378): warning C4003: not enough actual parameters for macro 'max'
-k:\vulkanlearningrepo\vulkanwindowedprogram1\vulkanwindowedprogram1\main.cpp(378): error C2589: '(': illegal token on right side of '::'
-k:\vulkanlearningrepo\vulkanwindowedprogram1\vulkanwindowedprogram1\main.cpp(378): error C2062: type 'unknown-type' unexpected
-k:\vulkanlearningrepo\vulkanwindowedprogram1\vulkanwindowedprogram1\main.cpp(378): error C2059: syntax error: ')'
-k:\vulkanlearningrepo\vulkanwindowedprogram1\vulkanwindowedprogram1\main.cpp(379): error C2143: syntax error: missing ';' before '{'
-k:\vulkanlearningrepo\vulkanwindowedprogram1\vulkanwindowedprogram1\main.cpp(382): error C2181: illegal else without matching if
-k:\vulkanlearningrepo\vulkanwindowedprogram1\vulkanwindowedprogram1\main.cpp(386): error C2589: '(': illegal token on right side of '::'
-k:\vulkanlearningrepo\vulkanwindowedprogram1\vulkanwindowedprogram1\main.cpp(386): error C2062: type 'unknown-type' unexpected
-k:\vulkanlearningrepo\vulkanwindowedprogram1\vulkanwindowedprogram1\main.cpp(386): error C2059: syntax error: ')'
-k:\vulkanlearningrepo\vulkanwindowedprogram1\vulkanwindowedprogram1\main.cpp(387): error C2589: '(': illegal token on right side of '::'
-k:\vulkanlearningrepo\vulkanwindowedprogram1\vulkanwindowedprogram1\main.cpp(387): error C2062: type 'unknown-type' unexpected
-k:\vulkanlearningrepo\vulkanwindowedprogram1\vulkanwindowedprogram1\main.cpp(387): error C2059: syntax error: ')'
+  VulkanWindowedProgram1.vcxproj -> K:\VulkanLearningRepo\VulkanWindowedProgram1\Debug\VulkanWindowedProgram1.exe

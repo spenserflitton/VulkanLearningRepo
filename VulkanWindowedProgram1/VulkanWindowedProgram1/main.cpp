@@ -126,6 +126,7 @@ private:
 	VkDevice device;
 	VkQueue graphicsQueue;
 	VkQueue presentQueue;
+	VkSwapchainKHR swapChain;
 	
 	bool initWindow()
 	{
@@ -170,8 +171,6 @@ private:
 		auto sdlExtensions = getRequiredExtensions();
 		instInfo.enabledExtensionCount = static_cast<uint32_t>(sdlExtensions.size());
 		instInfo.ppEnabledExtensionNames = sdlExtensions.data();
-
-		auto extensions = getRequiredExtensions();
 
 		if (enableValidationLayers)
 		{
@@ -272,20 +271,18 @@ private:
 
 	std::vector<const char*> getRequiredExtensions()
 	{
-		const char** sdlExtensions = new const char *[1];
 		uint32_t sdlExtensionCount = 0;
 		if (!SDL_Vulkan_GetInstanceExtensions(window, &sdlExtensionCount, NULL)) {
 			std::cout << "Could not get the number of required instance extensions from SDL." << std::endl;
 			return {};
 		}
 
-
-		if (!SDL_Vulkan_GetInstanceExtensions(window, &sdlExtensionCount, sdlExtensions)) {
+		std::vector<const char*> extensions(sdlExtensionCount);
+		if (!SDL_Vulkan_GetInstanceExtensions(window, &sdlExtensionCount, extensions.data())) {
 			std::cout << "Could not get the names of required instance extensions from SDL." << std::endl;
 			return {};
 		}
 
-		std::vector<const char*> extensions(sdlExtensions, sdlExtensions + sdlExtensionCount);
 
 		if (enableValidationLayers)
 		{
@@ -507,9 +504,61 @@ private:
 
 	void createSurface()
 	{
-		if (SDL_Vulkan_CreateSurface(window, instance, &surface) != VK_SUCCESS)
+		if (!SDL_Vulkan_CreateSurface(window, instance, &surface))
 		{
 			throw std::runtime_error("failed to create window surface.");
+		}
+	}
+
+	void createSwapChain()
+	{
+		SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
+
+		VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
+		VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
+		VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
+
+		uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
+		if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)
+		{
+			imageCount = swapChainSupport.capabilities.maxImageCount;
+		}
+
+		VkSwapchainCreateInfoKHR createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+		createInfo.surface = surface;
+		createInfo.minImageCount = imageCount;
+		createInfo.imageFormat = surfaceFormat.format;
+		createInfo.imageColorSpace = surfaceFormat.colorSpace;
+		createInfo.imageExtent = extent;
+		createInfo.imageArrayLayers = 1;
+		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+		QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+		uint32_t queueFamilyIndices[] = { (uint32_t)indices.graphicsFamily, (uint32_t)indices.presentFamily };
+
+		if (indices.graphicsFamily != indices.presentFamily)
+		{
+			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+			createInfo.queueFamilyIndexCount = 2;
+			createInfo.pQueueFamilyIndices = queueFamilyIndices;
+		}
+		else
+		{
+			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			createInfo.queueFamilyIndexCount = 0;
+			createInfo.pQueueFamilyIndices = nullptr;
+		}
+
+		createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+		createInfo.presentMode = presentMode;
+		createInfo.clipped = VK_TRUE;
+		createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+		if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS)
+		{
+			throw std::runtime_error("failed to create swap chain!");
 		}
 	}
 
@@ -523,6 +572,7 @@ private:
 		createSurface();
 		pickPhysicalDevice();
 		createLogicalDevice();
+		createSwapChain();
 
 		return true;
 	}
@@ -553,6 +603,7 @@ private:
 
 	void cleanup()
 	{
+		vkDestroySwapchainKHR(device, swapChain, nullptr);
 		vkDestroyDevice(device, nullptr);
 		if (enableValidationLayers)
 		{
