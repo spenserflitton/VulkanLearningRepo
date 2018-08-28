@@ -1,2 +1,4 @@
-/VulkanWindowedProgram1/.vs/VulkanWindowedProgram1/v15/ipch
-/VulkanWindowedProgram1/.vs/VulkanWindowedProgram1/v15/Browse.VC.opendb
+*/.vs/
+*.suo
+*.db
+*.opendb
