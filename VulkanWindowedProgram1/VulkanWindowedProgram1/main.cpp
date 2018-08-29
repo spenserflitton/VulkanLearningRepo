@@ -126,6 +126,7 @@ struct Vertex
 		attributeDescriptions[0].location = 0;
 		attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
 		attributeDescriptions[0].offset = offsetof(Vertex, position);
+
 		attributeDescriptions[1].binding = 0;
 		attributeDescriptions[1].location = 1;
 		attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -137,8 +138,8 @@ struct Vertex
 
 const std::vector<Vertex> vertices = 
 {
-	{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-	{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+	{{0.0f, -0.5f}, {1.0f, 0.35f, 0.0f}},
+	{{0.5f, 0.5f}, {0.0f, 0.75f, 0.0f}},
 	{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
 };
 
@@ -184,6 +185,7 @@ private:
 	std::vector<VkFence> inFlightFences;
 	size_t currentFrame = 0;
 	VkBuffer vertexBuffer;
+	VkDeviceMemory vertexBufferMemory;
 	
 	bool initWindow()
 	{
@@ -767,7 +769,7 @@ private:
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 		vertexInputInfo.vertexBindingDescriptionCount = 1;
 		vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-		vertexInputInfo.vertexAttributeDescriptionCount = 1;
+		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
 		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
@@ -914,6 +916,22 @@ private:
 		}
 	}
 
+	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+	{
+		VkPhysicalDeviceMemoryProperties memoryProperties;
+		vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
+
+		for (uint32_t index = 0; index < memoryProperties.memoryTypeCount; index++)
+		{
+			if ((typeFilter & (1 << index)) && (memoryProperties.memoryTypes[index].propertyFlags & properties) == properties)
+			{
+				return index;
+			}
+		}
+
+		throw std::runtime_error("failed to find suitable memory type!");
+	}
+
 	void createVertexBuffer()
 	{
 		VkBufferCreateInfo bufferInfo = {};
@@ -929,6 +947,23 @@ private:
 
 		VkMemoryRequirements memoryRequirements;
 		vkGetBufferMemoryRequirements(device, vertexBuffer, &memoryRequirements);
+
+		VkMemoryAllocateInfo allocateInfo = {};
+		allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocateInfo.allocationSize = memoryRequirements.size;
+		allocateInfo.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+		if (vkAllocateMemory(device, &allocateInfo, nullptr, &vertexBufferMemory) != VK_SUCCESS)
+		{
+			throw std::runtime_error("failed to allocate vertex buffer memory!");
+		}
+
+		vkBindBufferMemory(device, vertexBuffer, vertexBufferMemory, 0);
+
+		void* data;
+		vkMapMemory(device, vertexBufferMemory, 0, bufferInfo.size, 0, &data);
+		memcpy(data, vertices.data(), (size_t)bufferInfo.size);
+		vkUnmapMemory(device, vertexBufferMemory);
 	}
 	
 	void createCommandBuffers()
@@ -971,7 +1006,12 @@ private:
 
 			vkCmdBeginRenderPass(commandBuffers[index], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 			vkCmdBindPipeline(commandBuffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
-			vkCmdDraw(commandBuffers[index], 3, 1, 0, 0);
+
+			VkBuffer vertexBuffers[] = { vertexBuffer };
+			VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(commandBuffers[index], 0, 1, vertexBuffers, offsets);
+
+			vkCmdDraw(commandBuffers[index], static_cast<uint32_t>(vertices.size()), 1, 0, 0);
 			vkCmdEndRenderPass(commandBuffers[index]);
 			if (vkEndCommandBuffer(commandBuffers[index]) != VK_SUCCESS)
 			{
@@ -1120,6 +1160,7 @@ private:
 		}
 		vkDestroySwapchainKHR(device, swapChain, nullptr);
 		vkDestroyBuffer(device, vertexBuffer, nullptr);
+		vkFreeMemory(device, vertexBufferMemory, nullptr);
 		vkDestroyDevice(device, nullptr);
 		if (enableValidationLayers)
 		{
